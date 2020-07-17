@@ -10,10 +10,13 @@ export class Store {
     // Auto install if it is not done yet and `window` has `Vue`.
     // To allow users to avoid auto-installation in some cases,
     // this code should be placed here. See #731
+
+    // 如果window中已经存在一个Vue实例，则自动安装store
     if (!Vue && typeof window !== 'undefined' && window.Vue) {
       install(window.Vue)
     }
 
+    // 开发模式下的提示信息
     if (__DEV__) {
       assert(Vue, `must call Vue.use(Vuex) before creating a store instance.`)
       assert(typeof Promise !== 'undefined', `vuex requires a Promise polyfill in this browser.`)
@@ -26,18 +29,23 @@ export class Store {
     } = options
 
     // store internal state
+    // 判断是否正在commit的标识符
     this._committing = false
     this._actions = Object.create(null)
     this._actionSubscribers = []
     this._mutations = Object.create(null)
     this._wrappedGetters = Object.create(null)
+    // 初始化整个module树
     this._modules = new ModuleCollection(options)
     this._modulesNamespaceMap = Object.create(null)
+    // 所有用到vuex的实例数组
     this._subscribers = []
+    // 初始化观察者实例
     this._watcherVM = new Vue()
     this._makeLocalGettersCache = Object.create(null)
 
     // bind commit and dispatch to self
+    // 让dispatch和commit方法内的this始终指向store实例对象
     const store = this
     const { dispatch, commit } = this
     this.dispatch = function boundDispatch (type, payload) {
@@ -74,6 +82,7 @@ export class Store {
     return this._vm._data.$$state
   }
 
+  // 禁止直接修改state
   set state (v) {
     if (__DEV__) {
       assert(false, `use store.replaceState() to explicit replace store state.`)
@@ -82,12 +91,16 @@ export class Store {
 
   commit (_type, _payload, _options) {
     // check object-style commit
+
+    // 格式化传入的数据
     const {
       type,
       payload,
       options
     } = unifyObjectStyle(_type, _payload, _options)
 
+
+    // 判断传入的mutation type是否存在
     const mutation = { type, payload }
     const entry = this._mutations[type]
     if (!entry) {
@@ -244,6 +257,7 @@ export class Store {
     resetStore(this, true)
   }
 
+  // 执行mutaion
   _withCommit (fn) {
     const committing = this._committing
     this._committing = true
@@ -303,6 +317,8 @@ function resetStoreVM (store, state, hot) {
   // some funky global mixins
   const silent = Vue.config.silent
   Vue.config.silent = true
+
+  // store实例的内部属性_vm就是一个Vue实例, new Store时传入的state存放在data中, getters则存放再computed中
   store._vm = new Vue({
     data: {
       $$state: state
@@ -333,6 +349,7 @@ function installModule (store, rootState, path, module, hot) {
   const namespace = store._modules.getNamespace(path)
 
   // register in namespace map
+  
   if (module.namespaced) {
     if (store._modulesNamespaceMap[namespace] && __DEV__) {
       console.error(`[vuex] duplicate namespace ${namespace} for the namespaced module ${path.join('/')}`)
@@ -522,6 +539,7 @@ function getNestedState (state, path) {
   return path.reduce((state, key) => state[key], state)
 }
 
+// 统一对象格式
 function unifyObjectStyle (type, payload, options) {
   if (isObject(type) && type.type) {
     options = payload
@@ -537,6 +555,7 @@ function unifyObjectStyle (type, payload, options) {
 }
 
 export function install (_Vue) {
+  // 防止多次install
   if (Vue && _Vue === Vue) {
     if (__DEV__) {
       console.error(
@@ -545,6 +564,8 @@ export function install (_Vue) {
     }
     return
   }
+  // 将内部Vue指针指向目标Vue实例
   Vue = _Vue
+  // 
   applyMixin(Vue)
 }
